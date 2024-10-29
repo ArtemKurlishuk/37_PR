@@ -1,0 +1,23 @@
+﻿<!--Подключаем наше пространство имён-->
+@using Shop.Data.Models
+<!--В качестве модели данных используем предметы-->
+@model IEnumerable<Categories>
+
+@{
+    // В качестве основного элемента используем файл _Layout
+    Layout = "_Layout1";
+}
+<h2>Все категории</h2>
+@{
+    // Перебираем предметы
+    foreach (var category in Model)
+    {
+        <div class="category">
+            <div class="data2">
+                <h3>@category.Name</h3>
+                <div>Описание: @category.Description</div>
+            </div>
+        </div>
+    }
+}
+

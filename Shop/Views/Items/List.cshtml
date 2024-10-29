@@ -1,0 +1,227 @@
+﻿<!--Подключаем наше пространство имён-->
+@using Shop.Data.ViewModell
+<!--В качестве модели данных используем предметы-->
+@model VMItems
+
+@{
+    // В качестве основного элемента используем файл _Layout
+    Layout = "_Layout";
+}
+<div>
+    <select onchange="SelectCategory(this)">
+        <option value="0">Все товары</option>
+        @{
+            foreach (var Category in Model.Categorys)
+            {
+                if (Category.Id == Model.SelectCategory)
+                {
+                    <option selected="selected" value="@Category.Id">@Category.Name</option>
+                }
+                else
+                {
+                    <option value="@Category.Id">@Category.Name</option>
+                }
+            }
+        }
+    </select>
+    <select id="sortBySelect" onchange="SortByPrice(this)">
+        <option value="0">Выбрать ...</option>
+        <option value="asc" <%=(Request.QueryString["sortBy"] == "asc") ? "selected" : ""></%>По возрастанию цены</option>
+        <option value="desc" <%=(Request.QueryString["sortBy"] == "desc") ? "selected" : ""></%>По убыванию цены</option>
+    </select>
+    <script>
+        function saveSortBy(value) {
+            localStorage.setItem('sortBy', value);
+        }
+        function SelectCategory(sender) {
+            window.location = "/Items/List?id=" + sender.value;
+        }
+        // Функция для загрузки выбранного значения из localStorage при загрузке страницы
+        window.onload = function () {
+            var sortBy = localStorage.getItem('sortBy');
+            if (sortBy) {
+                document.getElementById('sortBySelect').value = sortBy;
+            }
+        }
+
+        // Функция для сортировки при изменении значения select
+        function SortByPrice(sender) {
+            var SortBy = sender.value;
+            saveSortBy(SortBy); // Сохраняем выбранное значение в localStorage
+            window.location = "/Items/List?sortBy=" + SortBy;
+        }
+    </script>
+</div>
+
+<h2>Все предметы</h2>
+@{
+    // Перебираем предметы
+    foreach (var item in Model.Items)
+    {
+        if (item.Category.Id == Model.SelectCategory)
+        {
+            <div class="item">
+                <img src="@item.Img" />
+                <!--Кнопка добавления в корзину-->
+                <div>
+                    <div class="button" id="@item.Id">
+                        В корзину
+                    </div>
+                    <div class="count">
+                        <div class="button min">-</div>
+                        <div class="text">1</div>
+                        <div class="button max">+</div>
+                    </div>
+                </div>
+                <div class="data">
+                    <h3>Модель: @item.Name</h3>
+                    <p>Цена: @item.Price.ToString("c")</p>
+                    <p>Категория: @item.Category.Name</p>
+                    <div>Описание: @item.Description</div>
+                    
+                </div>
+            </div>
+        }
+        else if (Model.SelectCategory == 0)
+        {
+            <div class="item">
+                <img src="@item.Img" />
+                <!--Кнопка добавления в корзину-->
+                <div class="basketitem">
+                    <div class="button" id="@item.Id">
+                        В корзину
+                    </div>
+                    <div class="count">
+                        <div class="button min">-</div>
+                        <div class="text">1</div>
+                        <div class="button max">+</div>
+                    </div>
+                </div>
+                <div class="data">
+                    <h3>Модель: @item.Name</h3>
+                    <p>Цена: @item.Price.ToString("c")</p>
+                    <p>Категория: @item.Category.Name</p>
+                    <div>Описание: @item.Description</div>
+                </div>
+            </div>
+        }
+
+    }
+    <script>
+        function deleteItem(itemId) {
+            if (confirm("Вы уверены что хотите удалить товар?")) {
+                window.location.href = "/Items/Delete?id=" + itemId;
+            }
+        }
+
+        function editItem(itemId) {
+            window.location.href = "/Items/Edit?id=" + itemId;
+        }
+
+        // При надатии на кнопки, находящееся в корзине и в предмете
+        $(".item").children(".basketitem").children(".button").click(function () {
+            var idItem = $(this).attr('id');
+            var basketInfo = localStorage.getItem('BusketInfo');
+            var idItems = Array.isArray(JSON.parse(basketInfo)) ? JSON.parse(basketInfo) : [];
+            idItems.push(idItem);
+            console.log(idItem);
+            localStorage.setItem('BusketInfo', JSON.stringify(idItems));
+
+            // Показыввает элемент с классом count
+            $(this).parent().children(".count").show();
+            // Скрываем кнопку
+            $(this).hide();
+            // Вызываем AJAX
+            $.ajax({
+                // Контороллер выполнения и метод вызываемый в неём
+                url: '@Url.Action("Basket", "Items")',
+                // Тип данных, которые отправляем
+                contentType: "application/json; chatset=utf-8",
+                // Передаём ID предмета
+                data: { idItem: $(this).attr('id') },
+                // Тип данных, ожидаемых от сервера
+                dataType: "json",
+                // Функция успешного выполнения
+                success: SuccessBasket,
+                // Функция не успешного выполнения
+                error: AjaxError
+            });
+        });
+
+        // Функеция успешного выполнения
+        function SuccessBasket(data) {
+            console.log(data);
+            updateBasketCount();
+
+        }
+
+        // Функция не усапешного выполнения
+        function AjaxError() {
+            console.log("Ошибка выполнения ajax");
+        }
+
+        // Назначем действие на кнопку -
+        $(".count").children(".min").click(function () {
+            // Получаем ID оборудования
+            var idItem = $(this).parent().parent().children('.button').attr('id');
+            // Получаем кол-во
+            var count = $(this).parent().children(".text").text();
+            // Уменьшаем кол-во
+            count--;
+            // Если кол-во = 0
+            if (count == 0) {
+                // Показываем кнопку
+                $(this).parent().parent().children('.button').show();
+                // Скрываем каунтер
+                $(this).parent().parent().children('.count').hide();
+            } else {
+                // Изменяем текст
+                $(this).parent().children(".text").text(count);
+            }
+
+            // Вызываем AJAX
+            $.ajax({
+                // Контороллер выполнения и метод вызываемый в неём
+                url: '@Url.Action("BasketCount", "Items")',
+                // Тип данных, которые отправляем
+                contentType: "application/json; chatset=utf-8",
+                // Передаём ID предмета
+                data: { idItem: idItem, count: count },
+                // Тип данных, ожидаемых от сервера
+                dataType: "json",
+                // Функция успешного выполнения
+                success: SuccessBasket,
+                // Функция не успешного выполнения
+                error: AjaxError
+            });
+        });
+
+        // Назначем действие на кнопку +
+        $(".count").children(".max").click(function () {
+            // Получаем ID оборудования
+            var idItem = $(this).parent().parent().children('.button').attr('id');
+            // Получаем кол-во
+            var count = $(this).parent().children(".text").text();
+            // Уменьшаем кол-во
+            count++;
+            // Изменяем текст
+            $(this).parent().children(".text").text(count);
+
+            // Вызываем AJAX
+            $.ajax({
+                // Контороллер выполнения и метод вызываемый в неём
+                url: '@Url.Action("BasketCount", "Items")',
+                // Тип данных, которые отправляем
+                contentType: "application/json; chatset=utf-8",
+                // Передаём ID предмета
+                data: { idItem: idItem, count: count },
+                // Тип данных, ожидаемых от сервера
+                dataType: "json",
+                // Функция успешного выполнения
+                success: SuccessBasket,
+                // Функция не успешного выполнения
+                error: AjaxError
+            });
+        });
+    </script>
+}
