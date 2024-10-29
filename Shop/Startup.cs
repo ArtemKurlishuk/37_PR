@@ -31,7 +31,7 @@ namespace Shop
             services.AddTransient<IItems, MockItems>(); 
 
             // Включаем поддержку MVC
-
+             
             services.AddMvc(option => option.EnableEndpointRouting = false); 
         }
 
