@@ -32,7 +32,7 @@ namespace Shop
 
             // Включаем поддержку MVC
 
-            services.AddMvc(option => option.EnableEndpointRouting = false);
+            services.AddMvc(option => option.EnableEndpointRouting = false); 
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
