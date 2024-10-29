@@ -28,7 +28,7 @@ namespace Shop
         {
             // объеденяем интерфес и реализующий класс
             services.AddTransient<ICategorys, MockCategorys>();
-            services.AddTransient<IItems, MockItems>();
+            services.AddTransient<IItems, MockItems>(); 
 
             // Включаем поддержку MVC
             services.AddMvc(option => option.EnableEndpointRouting = false);
